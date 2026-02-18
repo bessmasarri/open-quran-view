@@ -6,6 +6,7 @@ import {
   loadAyatMarkerFont,
   surahNumberToFontCode,
   createLayoutCalculator,
+  getFontUrl,
   type MushafLayout,
   type PageLayout,
   type Word,
@@ -328,6 +329,19 @@ export class OpenQuranView extends HTMLElement {
       }
     `;
     this.shadowRoot?.appendChild(this.fontFaceSheet);
+
+    if (this.layout === "hafs-v2" || this.layout === "hafs-v4") {
+      const bismillahFontUrl = getFontUrl(this.layout, 1);
+      const bismillahFontFace = new FontFace(
+        "QuranBismillah",
+        `url(${bismillahFontUrl})`,
+      );
+      await bismillahFontFace.load();
+      if (typeof document !== "undefined" && document.fonts) {
+        document.fonts.add(bismillahFontFace);
+      }
+    }
+
     this.fontLoaded = true;
   }
 
@@ -414,6 +428,8 @@ export class OpenQuranView extends HTMLElement {
       1, 2, 602, 603, 604,
     ]);
 
+    let lastSurahNumber: number | undefined;
+
     for (const line of pageLayout.lines) {
       const isCenteredLine =
         line.isCentered || CENTERED_PAGES_HORIZONTAL_SET.has(this.currentPage);
@@ -440,6 +456,7 @@ export class OpenQuranView extends HTMLElement {
         `;
 
         if (line.surahNumber) {
+          lastSurahNumber = line.surahNumber;
           surahEl.textContent = surahNumberToFontCode(line.surahNumber);
         } else {
           surahEl.textContent = `surah000`;
@@ -447,6 +464,10 @@ export class OpenQuranView extends HTMLElement {
 
         lineEl.appendChild(surahEl);
       } else if (line.lineType === "bismillah") {
+        // Skip Bismillah for Surah 1 and Surah 9
+        if (lastSurahNumber === 1 || lastSurahNumber === 9) continue;
+
+
         const lineContent = document.createElement("div");
         lineContent.className = "quran-line-content";
         lineContent.style.cssText = `
@@ -459,10 +480,9 @@ export class OpenQuranView extends HTMLElement {
 
           wordEl.textContent = word.text || `[${word.id}]`;
           wordEl.style.cssText = `
-            font-family: ${
-              this.layout === "hafs-unicode"
-                ? '"DigitalKhatt", "Scheherazade New", "Amiri", system-ui, -apple-system, sans-serif'
-                : '"QuranFont", system-ui, -apple-system, sans-serif'
+            font-family: ${this.layout === "hafs-unicode"
+              ? '"DigitalKhatt", "Scheherazade New", "Amiri", system-ui, -apple-system, sans-serif'
+              : '"QuranBismillah", "QuranFont", system-ui, -apple-system, sans-serif'
             };
             color: ${wordColor};
             height: ${pageLayout.metrics.lineHeight}px;
@@ -519,10 +539,9 @@ export class OpenQuranView extends HTMLElement {
           } else {
             wordEl.textContent = word.text || `[${word.id}]`;
             wordEl.style.cssText = `
-              font-family: ${
-                this.layout === "hafs-unicode"
-                  ? '"DigitalKhatt", "Scheherazade New", "Amiri", system-ui, -apple-system, sans-serif'
-                  : '"QuranFont", system-ui, -apple-system, sans-serif'
+              font-family: ${this.layout === "hafs-unicode"
+                ? '"DigitalKhatt", "Scheherazade New", "Amiri", system-ui, -apple-system, sans-serif'
+                : '"QuranFont", system-ui, -apple-system, sans-serif'
               };
               color: ${wordColor};
               height: ${pageLayout.metrics.lineHeight}px;

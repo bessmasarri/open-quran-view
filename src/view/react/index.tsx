@@ -8,6 +8,7 @@ import {
   loadSurahNameFont,
   surahNumberToFontCode,
   getSurahFrameUrl,
+  getFontUrl,
   type MushafLayout,
   type PageLayout,
   type Word,
@@ -120,6 +121,19 @@ export const OpenQuranView: React.FC<OpenQuranViewProps> = ({
     handleLoadPage(page);
 
     if (mushafLayout === "hafs-unicode") loadAyatMarkerFont();
+
+    if (mushafLayout === "hafs-v2" || mushafLayout === "hafs-v4") {
+      const bismillahFontUrl = getFontUrl(mushafLayout, 1);
+      const bismillahFontFace = new FontFace(
+        "QuranBismillah",
+        `url(${bismillahFontUrl})`,
+      );
+      bismillahFontFace.load().then((loadedFace) => {
+        if (typeof document !== "undefined" && document.fonts) {
+          document.fonts.add(loadedFace);
+        }
+      });
+    }
   }, [mushafLayout, page, handleLoadPage]);
 
   useEffect(() => {
